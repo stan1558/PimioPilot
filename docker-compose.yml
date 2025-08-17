@@ -1,0 +1,7 @@
+services:
+  app:
+    build: .
+    container_name: pimio-pilot
+    volumes:
+      - .:/app
+    command: python fetch_taiwan_stock_yfinance.py

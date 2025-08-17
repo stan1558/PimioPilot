@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VCS / OS
+.git/
+.gitignore
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Local envs / IDE
+.env
+.venv/
+.idea/
+.vscode/
