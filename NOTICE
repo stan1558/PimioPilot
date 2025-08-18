@@ -1,4 +1,13 @@
-This product includes software developed by
-Ran Aroussi and contributors (https://github.com/ranaroussi/yfinance).
+This project includes code and dependencies from the following open source projects:
 
-Licensed under the Apache License, Version 2.0.
+- yfinance (https://github.com/ranaroussi/yfinance)
+  License: Apache 2.0
+
+- TimescaleDB (https://github.com/timescale/timescaledb)
+  License: Apache 2.0 and Timescale License (for advanced features)
+
+- pandas (https://github.com/pandas-dev/pandas)
+  License: BSD 3-Clause
+
+- psycopg2-binary (https://github.com/psycopg/psycopg2)
+  License: LGPL

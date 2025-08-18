@@ -1,7 +1,41 @@
 services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16-oss
+    # platform: linux/arm64/v8
+    environment:
+      - POSTGRES_USER=appuser
+      - POSTGRES_PASSWORD=apppass
+      - POSTGRES_DB=marketdata
+      - TIMESCALEDB_TELEMETRY=off
+    ports:
+      - "5432:5432"
+    volumes:
+      - tsdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d marketdata"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   app:
     build: .
-    container_name: pimio-pilot
+    environment:
+      - TZ=Asia/Taipei
+      - DB_HOST=timescaledb
+      - DB_PORT=5432
+      - DB_NAME=marketdata
+      - DB_USER=appuser
+      - DB_PASSWORD=apppass
+      - TICKER=2330.TW
+    depends_on:
+      timescaledb:
+        condition: service_healthy
     volumes:
       - .:/app
+    working_dir: /app
     command: python fetch_taiwan_stock_yfinance.py
+    restart: on-failure
+
+volumes:
+  tsdata:

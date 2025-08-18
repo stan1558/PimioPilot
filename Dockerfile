@@ -1,18 +1,21 @@
+# Base image
 FROM python:3.12-slim
 
-ENV TZ=Asia/Taipei
+# --- Environment hygiene ---
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    TZ=Asia/Taipei
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata  && rm -rf /var/lib/apt/lists/*
 
-RUN python -m pip install --no-cache-dir --upgrade pip
-
+# --- Workdir & Python deps ---
 WORKDIR /app
+COPY requirements.txt ./
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+# --- App code ---
 COPY . .
 
-CMD ["python"]
+# Let docker-compose set the command (see docker-compose.yml)
+# CMD ["python", "fetch_taiwan_stock_yfinance.py"]
