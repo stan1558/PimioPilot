@@ -21,55 +21,97 @@ This project uses:
 
 ## Usage
 
-### 1. Initialize environment
-> ⚠️ The following will clear all existing data (use only for the first run or when rebuilding schema).
+### 1. Build and run services
 ```bash
 docker compose down -v
 docker compose up -d --build
+docker compose logs -f app   # follow logs
 ```
 
-### 2. Check fetch results
+Expected output in logs:
+```
+{"status": "ok", "rows": 14, "out": "out/demo-001"}
+```
+
+### 2. Inspect artifacts
+Outputs are written under `./out/demo-001/`:
+- `summary.json` → task metadata (symbols, rows, cols, runtime, etc.)
+- `logs.ndjson` → process logs (one JSON per line)
+- `data.csv` (optional) → human-readable table
+
+Example check:
 ```bash
-docker compose logs -f app
-```
-Expected output:
-```
-[2330.TW] upsert daily(1d): 124 rows, intraday(5m): 53 rows
-✅ done
-```
-
-### 3. Query data
-Use `query_timescaledb.py` to query data and export as CSV.
-
-```bash
-# Query daily OHLCV
-docker compose run --rm app python query_timescaledb.py 2330.TW --start 2025-08-01 --end 2025-08-18 --interval 1d --csv out_1d.csv
-
-# Query intraday 5m OHLCV
-docker compose run --rm app python query_timescaledb.py 2330.TW --start 2025-08-18 --end 2025-08-19 --interval 5m --csv out_5m.csv
+ls -la out/demo-001
+cat out/demo-001/summary.json
+head -20 out/demo-001/data.csv
 ```
 
 ---
 
+## Configuration
+
+Job configs are written in **YAML** and validated with **JSON Schema**.
+
+- Schema: [`schemas/job.schema.json`](schemas/job.schema.json)
+- Example job: [`examples/job.yaml`](examples/job.yaml)
+
+### Example `examples/job.yaml`
+```yaml
+task_id: demo-001
+source: yfinance
+symbols: ["2330.TW"]
+interval: "1d"
+range:
+  start: "2025-08-01"
+  end: "2025-08-22"
+
+yfinance_options:
+  auto_adjust: true
+  actions: false
+  prepost: false
+  threads: auto
+
+outputs:
+  out_dir: "./out/demo-001"
+  write_csv: true
+  csv_filename: "data.csv"
+```
+
 ---
 
-## Example Output
+## CLI (inside container)
 
-After running a daily query, you might see results like this:
+You can also run jobs manually inside the app container:
 
+```bash
+docker compose exec app \
+  python -m pimiopilot_data.cli run --config examples/job.yaml
 ```
-                       ts  symbol   open   high    low  close   volume  dividends  stock_splits src_interval
-2025-08-03 16:00:00+00:00 2330.TW 1130.0 1135.0 1125.0 1135.0 23939021        0.0           0.0           1d
-2025-08-04 16:00:00+00:00 2330.TW 1145.0 1150.0 1140.0 1150.0 17012960        0.0           0.0           1d
-2025-08-05 16:00:00+00:00 2330.TW 1130.0 1135.0 1125.0 1125.0 22023406        0.0           0.0           1d
-2025-08-06 16:00:00+00:00 2330.TW 1160.0 1180.0 1155.0 1180.0 61370031        0.0           0.0           1d
-2025-08-07 16:00:00+00:00 2330.TW 1180.0 1185.0 1170.0 1175.0 25958258        0.0           0.0           1d
-```
+
+---
+
+## Next Steps
+
+- **TimescaleDB Integration**:
+  The sink is stubbed in [`src/pimiopilot_data/sinks/timescaledb_stub.py`](src/pimiopilot_data/sinks/timescaledb_stub.py).
+  Future work: implement bulk upsert (COPY + ON CONFLICT) with schema:
+
+  ```
+  table: tw_ticks
+  primary key: (symbol, ts)
+  columns: symbol, ts, open, high, low, close, adj_close, volume, src_interval
+  ```
+
+---
+
+## Notes
+
+- Old test scripts (`fetch_taiwan_stock_yfinance.py`, `query_timescaledb.py`) are moved to `legacy_scripts/` for reference.
+- Current pipeline does **not** write into TimescaleDB yet — only fetches and exports to files.
 
 ---
 
 ## License & Credits
-
 - [yfinance](https://github.com/ranaroussi/yfinance) (Apache 2.0 License)
 - [TimescaleDB](https://github.com/timescale/timescaledb) (Apache 2.0 License + Timescale License for advanced features)
 - [pandas](https://github.com/pandas-dev/pandas) (BSD 3-Clause License)

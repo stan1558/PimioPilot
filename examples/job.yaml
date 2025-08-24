@@ -1,0 +1,18 @@
+task_id: demo-001
+source: yfinance
+symbols: ["2330.TW"]
+interval: "1d"
+range:
+  start: "2025-08-01"
+  end: "2025-08-22"
+
+yfinance_options:
+  auto_adjust: true
+  actions: false
+  prepost: false
+  threads: auto
+
+outputs:
+  out_dir: "./out/demo-001"
+  write_csv: true
+  csv_filename: "data.csv"

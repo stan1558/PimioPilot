@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FetchJob",
+  "type": "object",
+  "required": [
+    "task_id",
+    "source",
+    "symbols",
+    "interval",
+    "range",
+    "outputs"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "const": "yfinance"
+    },
+    "symbols": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "interval": {
+      "type": "string",
+      "enum": [
+        "1d",
+        "1h",
+        "30m",
+        "15m",
+        "5m",
+        "1m"
+      ]
+    },
+    "range": {
+      "type": "object",
+      "required": [
+        "start"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "additionalProperties": false
+    },
+    "yfinance_options": {
+      "type": "object",
+      "properties": {
+        "auto_adjust": {
+          "type": "boolean",
+          "default": true
+        },
+        "actions": {
+          "type": "boolean",
+          "default": false
+        },
+        "prepost": {
+          "type": "boolean",
+          "default": false
+        },
+        "threads": {
+          "type": [
+            "integer",
+            "string"
+          ],
+          "default": "auto"
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputs": {
+      "type": "object",
+      "required": [
+        "out_dir"
+      ],
+      "properties": {
+        "out_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "write_csv": {
+          "type": "boolean",
+          "default": false
+        },
+        "csv_filename": {
+          "type": "string",
+          "default": "data.csv"
+        },
+        "csv_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -27,6 +27,7 @@ services:
       - DB_NAME=marketdata
       - DB_USER=appuser
       - DB_PASSWORD=apppass
+      - PYTHONPATH=/app/src
       - TICKER=2330.TW
     depends_on:
       timescaledb:
@@ -34,7 +35,7 @@ services:
     volumes:
       - .:/app
     working_dir: /app
-    command: python fetch_taiwan_stock_yfinance.py
+    command: python -m pimiopilot_data.cli run --config examples/job.yaml
     restart: on-failure
 
 volumes:
