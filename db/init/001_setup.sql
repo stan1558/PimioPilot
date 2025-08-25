@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS tw_ticks (
   high numeric,
   low numeric,
   "close" numeric,
+  adj_close numeric,
   volume bigint,
   dividends numeric,
   stock_splits numeric,

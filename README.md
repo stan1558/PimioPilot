@@ -25,7 +25,8 @@ This project uses:
 ```bash
 docker compose down -v
 docker compose up -d --build
-docker compose logs -f app   # follow logs
+docker compose logs -f timescaledb
+docker compose logs -f app
 ```
 
 Expected output in logs:
@@ -90,24 +91,9 @@ docker compose exec app \
 
 ---
 
-## Next Steps
-
-- **TimescaleDB Integration**:
-  The sink is stubbed in [`src/pimiopilot_data/sinks/timescaledb_stub.py`](src/pimiopilot_data/sinks/timescaledb_stub.py).
-  Future work: implement bulk upsert (COPY + ON CONFLICT) with schema:
-
-  ```
-  table: tw_ticks
-  primary key: (symbol, ts)
-  columns: symbol, ts, open, high, low, close, adj_close, volume, src_interval
-  ```
-
----
-
 ## Notes
 
 - Old test scripts (`fetch_taiwan_stock_yfinance.py`, `query_timescaledb.py`) are moved to `legacy_scripts/` for reference.
-- Current pipeline does **not** write into TimescaleDB yet — only fetches and exports to files.
 
 ---
 

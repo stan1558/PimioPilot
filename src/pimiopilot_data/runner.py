@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, time
+import json, time, os
 from pathlib import Path
 from typing import Tuple
 import pandas as pd
@@ -8,6 +8,7 @@ from .models import Job, RangeSpec, OutputSpec, YFOpts
 from .io.ndjson_logger import NDJSONLogger
 from .io.csv_writer import write_csv
 from .fetchers import yf_client
+from .sinks.timescaledb import upsert_prices, TSConfig
 
 def _materialize_job(raw: dict) -> Job:
     rng = RangeSpec(**raw["range"])
@@ -37,6 +38,7 @@ def run_job(validated_cfg: dict, schema_version: str = "2025-08-24") -> Tuple[di
 
     logger.log("job_start", task_id=job.task_id, symbols=job.symbols, interval=job.interval)
 
+    # Fetch data
     df = yf_client.fetch(
         job.symbols,
         interval=job.interval,
@@ -51,16 +53,29 @@ def run_job(validated_cfg: dict, schema_version: str = "2025-08-24") -> Tuple[di
     )
     logger.log("fetch_done", rows=int(df.shape[0]), cols=int(df.shape[1]))
 
+    # Optional CSV output
     csv_path: str | None = None
     if job.outputs.write_csv:
         csv_path = write_csv(df, job.outputs.out_dir, job.outputs.csv_filename, job.outputs.csv_fields)
         logger.log("csv_written", path=csv_path)
+
+    # TimescaleDB upsert
+    upsert_rows = 0
+    try:
+        cfg = TSConfig.from_env()
+        upsert_rows = upsert_prices(df, interval=job.interval, cfg=cfg)
+        logger.log("timescaledb_upsert_done", rows=upsert_rows, table=cfg.table, db=cfg.dbname or "dsn")
+    except Exception as e:
+        logger.log("timescaledb_upsert_error", error=str(e))
+        # Propagate to mark job as failed
+        raise
 
     elapsed = time.time() - t0
     summary = {
         "schema": {"job_config_schema": "schemas/job.schema.json", "version": schema_version},
         "task": {"task_id": job.task_id, "source": job.source, "symbols": job.symbols, "interval": job.interval, "range": {"start": job.range.start, "end": job.range.end}},
         "artifacts": {"log_ndjson": str(log_path), "csv": csv_path, "rows": int(df.shape[0]), "cols": int(df.shape[1]), "out_dir": str(out_dir)},
+        "db": {"table": cfg.table, "upserted": upsert_rows},
         "timing": {"seconds": round(elapsed, 3)},
         "status": "ok",
     }
