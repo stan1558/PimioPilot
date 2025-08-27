@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DBQuerySpec",
+  "type": "object",
+  "required": ["symbols", "time_range", "intervals", "columns", "output"],
+  "properties": {
+    "symbols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "time_range": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "format": "date-time" },
+        "end":   { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "intervals": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["1d","1h","30m","15m","5m","1m"] },
+      "minItems": 1
+    },
+    "columns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "filters": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional SQL-safe filters, e.g. \"volume >= 1000\""
+    },
+    "order_by": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["ts ASC"]
+    },
+    "limit": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "output": {
+      "type": "object",
+      "required": ["format", "path"],
+      "properties": {
+        "format": { "type": "string", "enum": ["csv", "ndjson", "parquet"] },
+        "path":   { "type": "string", "minLength": 1 },
+        "filename": { "type": "string" },
+        "include_header": { "type": "boolean", "default": true },
+        "compression": { "type": "string", "enum": ["auto","gzip","zstd","none"], "default": "auto" },
+        "chunk_size": { "type": ["integer","null"], "minimum": 1000 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

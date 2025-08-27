@@ -21,7 +21,7 @@ This project uses:
 
 ## Usage
 
-### 1. Build and run services
+### 1. Build and run services (data ingestion)
 ```bash
 docker compose down -v
 docker compose up -d --build
@@ -34,7 +34,7 @@ Expected output in logs:
 {"status": "ok", "rows": 14, "out": "out/demo-001"}
 ```
 
-### 2. Inspect artifacts
+#### Inspect artifacts
 Outputs are written under `./out/demo-001/`:
 - `summary.json` → task metadata (symbols, rows, cols, runtime, etc.)
 - `logs.ndjson` → process logs (one JSON per line)
@@ -49,51 +49,30 @@ head -20 out/demo-001/data.csv
 
 ---
 
-## Configuration
-
-Job configs are written in **YAML** and validated with **JSON Schema**.
-
-- Schema: [`schemas/job.schema.json`](schemas/job.schema.json)
-- Example job: [`examples/job.yaml`](examples/job.yaml)
-
-### Example `examples/job.yaml`
-```yaml
-task_id: demo-001
-source: yfinance
-symbols: ["2330.TW"]
-interval: "1d"
-range:
-  start: "2025-08-01"
-  end: "2025-08-22"
-
-yfinance_options:
-  auto_adjust: true
-  actions: false
-  prepost: false
-  threads: auto
-
-outputs:
-  out_dir: "./out/demo-001"
-  write_csv: true
-  csv_filename: "data.csv"
-```
-
----
-
-## CLI (inside container)
-
-You can also run jobs manually inside the app container:
+### 2. Run query service (data retrieval)
+The query module allows other components (e.g. strategy modules) to fetch data from the DB.
 
 ```bash
-docker compose exec app \
-  python -m pimiopilot_data.cli run --config examples/job.yaml
+docker compose rm -f query
+docker compose --profile query up query --abort-on-container-exit
+docker compose logs -f query
 ```
 
----
+Expected output:
+```
+{"status": "ok", "rows": 14, "result": "out/queries/q_2330_20250801_20250822.csv", "out": "out/queries"}
+```
 
-## Notes
+#### Query artifacts
+Outputs are written under `./out/queries/`:
+- `*.csv` → result table
+- `*.log.ndjson` → query logs
+- `*.manifest.json` → query metadata (config, rows, artifacts)
 
-- Old test scripts (`fetch_taiwan_stock_yfinance.py`, `query_timescaledb.py`) are moved to `legacy_scripts/` for reference.
+Example check:
+```bash
+cat out/queries/q_2330_20250801_20250822.manifest.json
+```
 
 ---
 

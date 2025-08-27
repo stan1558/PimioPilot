@@ -1,3 +1,5 @@
+name: pimiopilot
+
 services:
   timescaledb:
     image: timescale/timescaledb:latest-pg16-oss
@@ -11,7 +13,7 @@ services:
       - "5432:5432"
     volumes:
       - tsdata:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d marketdata"]
       interval: 5s
@@ -37,6 +39,27 @@ services:
     working_dir: /app
     command: python -m pimiopilot_data.cli run --config examples/job.yaml
     restart: on-failure
+
+  query:
+    profiles: ["query"]
+    build: .
+    entrypoint: python -m pimiopilot_data.cli query
+    environment:
+      - DB_HOST=timescaledb
+      - DB_NAME=marketdata
+      - DB_USER=appuser
+      - DB_PASSWORD=apppass
+      - DB_PORT=5432
+      - PYTHONPATH=/app/src
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    working_dir: /app
+    # default config; can be overridden at run-time
+    command: --config examples/query.yaml
+    restart: "no"
 
 volumes:
   tsdata:

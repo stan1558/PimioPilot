@@ -1,0 +1,23 @@
+symbols:
+  - "2330.TW"
+
+time_range:
+  start: "2025-08-01T00:00:00Z"
+  end:   "2025-08-23T00:00:00Z"
+
+intervals:
+  - "1d"
+
+columns:
+  - "ts"
+  - "symbol"
+  - "open"
+  - "high"
+  - "low"
+  - "close"
+  - "volume"
+
+output:
+  format: "csv"
+  path: "./out/queries"
+  filename: "q_2330_20250801_20250822"
