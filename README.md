@@ -19,6 +19,29 @@ This project uses:
 
 ---
 
+## 🚀 Quick Start
+
+### Configure environment variables
+Copy the provided example file and edit it with your own values:
+```bash
+cd PimioPilot
+cp .env.example .env
+```
+
+Edit `.env`:
+```dotenv
+DB_HOST=timescaledb
+DB_PORT=5432
+DB_NAME=marketdata
+DB_USER=your_user
+DB_PASSWORD=your_password
+
+# Optional alternative:
+# DB_DSN=postgresql://USER:PASSWORD@HOST:5432/marketdata
+```
+
+⚠️ **Note**: `.env` is already git-ignored. Do not commit it.
+
 ## Usage
 
 ### 1. Build and run services (data ingestion)

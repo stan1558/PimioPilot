@@ -17,14 +17,24 @@ class DBConn:
 
     @staticmethod
     def from_env() -> "DBConn":
-        return DBConn(
-            dsn=os.getenv("DB_DSN"),
-            host=os.getenv("DB_HOST", "timescaledb"),
-            dbname=os.getenv("DB_NAME", "marketdata"),
-            user=os.getenv("DB_USER", "appuser"),
-            password=os.getenv("DB_PASSWORD", "apppass"),
-            port=int(os.getenv("DB_PORT", "5432")),
-        )
+        """Build a DBConn from environment variables.
+
+        SECURITY: Do not provide hard-coded fallbacks for credentials.
+        Require DB_USER/DB_PASSWORD (or DB_DSN) to be set explicitly.
+        """
+        dsn = os.getenv("DB_DSN")
+        host = os.getenv("DB_HOST", "timescaledb")
+        dbname = os.getenv("DB_NAME", "marketdata")
+        user = os.getenv("DB_USER")
+        password = os.getenv("DB_PASSWORD")
+        port = int(os.getenv("DB_PORT", "5432"))
+
+        if not dsn and (not user or not password):
+            raise RuntimeError(
+                "Database credentials not set. Provide DB_DSN or DB_USER and DB_PASSWORD via environment variables."
+            )
+
+        return DBConn(dsn=dsn, host=host, dbname=dbname, user=user, password=password, port=port)
 
 def _connect(cfg: DBConn):
     if cfg.dsn:

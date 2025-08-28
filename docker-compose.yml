@@ -5,9 +5,9 @@ services:
     image: timescale/timescaledb:latest-pg16-oss
     # platform: linux/arm64/v8
     environment:
-      - POSTGRES_USER=appuser
-      - POSTGRES_PASSWORD=apppass
-      - POSTGRES_DB=marketdata
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
       - TIMESCALEDB_TELEMETRY=off
     ports:
       - "5432:5432"
@@ -15,7 +15,7 @@ services:
       - tsdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d marketdata"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $${POSTGRES_DB:-marketdata}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -27,8 +27,8 @@ services:
       - DB_HOST=timescaledb
       - DB_PORT=5432
       - DB_NAME=marketdata
-      - DB_USER=appuser
-      - DB_PASSWORD=apppass
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - PYTHONPATH=/app/src
       - TICKER=2330.TW
     depends_on:
@@ -47,8 +47,8 @@ services:
     environment:
       - DB_HOST=timescaledb
       - DB_NAME=marketdata
-      - DB_USER=appuser
-      - DB_PASSWORD=apppass
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_PORT=5432
       - PYTHONPATH=/app/src
     depends_on:
