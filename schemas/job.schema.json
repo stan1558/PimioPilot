@@ -39,9 +39,6 @@
     },
     "range": {
       "type": "object",
-      "required": [
-        "start"
-      ],
       "properties": {
         "start": {
           "type": "string",
@@ -50,8 +47,24 @@
         "end": {
           "type": "string",
           "format": "date"
+        },
+        "relative": {
+          "type": "string",
+          "pattern": "^[0-9]+[dwmy]$"
         }
       },
+      "oneOf": [
+        {
+          "required": [
+            "start"
+          ]
+        },
+        {
+          "required": [
+            "relative"
+          ]
+        }
+      ],
       "additionalProperties": false
     },
     "yfinance_options": {
@@ -75,6 +88,16 @@
             "string"
           ],
           "default": "auto"
+        }
+      },
+      "additionalProperties": false
+    },
+    "retention": {
+      "type": "object",
+      "properties": {
+        "delete_older_than": {
+          "type": "string",
+          "pattern": "^([0-9]+[dwmy]|[0-9]{4}-[0-9]{2}-[0-9]{2})$"
         }
       },
       "additionalProperties": false

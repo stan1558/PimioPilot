@@ -1,6 +1,7 @@
 name: pimiopilot
 
 services:
+  # 1) Database first
   timescaledb:
     image: timescale/timescaledb:latest-pg16-oss
     # platform: linux/arm64/v8
@@ -20,6 +21,7 @@ services:
       timeout: 3s
       retries: 20
 
+  # 2) Main app (fetch jobs)
   app:
     build: .
     environment:
@@ -40,6 +42,7 @@ services:
     command: python -m pimiopilot_data.cli run --config examples/job.yaml
     restart: on-failure
 
+  # 3) Query service (adhoc queries / exports)
   query:
     profiles: ["query"]
     build: .
@@ -60,6 +63,21 @@ services:
     # default config; can be overridden at run-time
     command: --config examples/query.yaml
     restart: "no"
+
+  # 4) Scheduler last (cron runner)
+  scheduler:
+    image: alpine:3.20
+    env_file: .env
+    volumes:
+      - ./:/app
+      - ./ops/cron/root:/etc/crontabs/root:ro
+    working_dir: /app
+    command: sh -lc "apk add --no-cache tzdata >/dev/null && export TZ=Asia/Taipei && mkdir -p /app/out && crond -f -l 8 -L /dev/stdout"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      app:
+        condition: service_started
 
 volumes:
   tsdata:

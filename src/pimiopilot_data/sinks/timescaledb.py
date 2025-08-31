@@ -81,3 +81,16 @@ def upsert_prices(df: pd.DataFrame, *, interval: str, cfg: Optional[TSConfig] = 
         with conn.cursor() as cur:
             psycopg2.extras.execute_values(cur, sql, rows, template=f"({placeholders})", page_size=1000)
     return len(rows)
+
+def purge_older_than(cfg: TSConfig, cutoff: str, symbols: list[str] | None = None) -> int:
+    """Delete rows older than cutoff date. Returns number of rows deleted."""
+    sql = f"DELETE FROM {cfg.table} WHERE ts < %s"
+    params = [cutoff]
+    if symbols:
+        sql += " AND symbol = ANY(%s)"
+        params.append(symbols)
+    with _connect(cfg) as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            deleted = cur.rowcount
+    return deleted

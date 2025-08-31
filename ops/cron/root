@@ -1,0 +1,14 @@
+###  ┌────────────────────── minute (0 - 59)
+###  │  ┌─────────────────── hour (0 - 23)
+###  │  │ ┌───────────────── day of month (1 - 31)
+###  │  │ │ ┌─────────────── month (1 - 12)
+###  │  │ │ │ ┌───────────── day of week (0 - 6) (Sunday=0)
+###  │  │ │ │ │
+###  │  │ │ │ │
+### 10 17 * * * ...
+
+### === Test use: runs every minute, writes to cron-test.log ===
+### * * * * * echo "cron test $(date)" >> /app/out/cron-test.log 2>&1
+
+### === Production use: runs a fetch job once daily at 17:10 ===
+10 17 * * * cd /app && python -m pimiopilot_data.cli run --config examples/job.yaml --schema schemas/job.schema.json >> /app/out/cron.log 2>&1

@@ -3,14 +3,21 @@ source: yfinance
 symbols: ["2330.TW"]
 interval: "1d"
 range:
-  start: "2025-08-01"
-  end: "2025-08-22"
+  # Option 1: explicit start/end
+  # start: "2025-08-01"
+  # end: "2025-08-22"
+
+  # Option 2: relative range
+  relative: "2m"
 
 yfinance_options:
   auto_adjust: true
   actions: false
   prepost: false
   threads: auto
+
+retention:
+  delete_older_than: "5y"
 
 outputs:
   out_dir: "./out/demo-001"

@@ -42,6 +42,21 @@ DB_PASSWORD=your_password
 
 ⚠️ **Note**: `.env` is already git-ignored. Do not commit it.
 
+### Configuration Notes
+
+In job YAML files (see `examples/job.yaml`), the following new options are supported:
+
+- `range.relative`: specify a relative time window instead of fixed `start`/`end` dates.
+  Examples:
+  - `"30d"` → last 30 day
+  - `"12m"` → last 12 month
+  - `"5y"` → last 5 year
+
+- `retention.delete_older_than`: automatically delete rows older than this cutoff after each run.
+  Accepts relative durations (e.g. `"7y"`) or absolute dates (`"2020-01-01"`).
+
+These options make it easier to keep the database up-to-date and avoid unbounded growth.
+
 ## Usage
 
 ### 1. Build and run services (data ingestion)
@@ -50,6 +65,7 @@ docker compose down -v
 docker compose up -d --build
 docker compose logs -f timescaledb
 docker compose logs -f app
+docker compose logs -f scheduler
 ```
 
 Expected output in logs:

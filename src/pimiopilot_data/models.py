@@ -3,8 +3,13 @@ from typing import List, Optional, Dict, Any
 
 @dataclass
 class RangeSpec:
-    start: str
+    start: Optional[str] = None
     end: Optional[str] = None
+    relative: Optional[str] = None
+
+@dataclass
+class RetentionSpec:
+    delete_older_than: Optional[str] = None
 
 @dataclass
 class OutputSpec:
@@ -29,4 +34,5 @@ class Job:
     range: RangeSpec
     outputs: OutputSpec
     yfinance_options: YFOpts = field(default_factory=YFOpts)
+    retention: Optional[RetentionSpec] = None
     raw: Dict[str, Any] = field(default_factory=dict)
