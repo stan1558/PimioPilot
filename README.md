@@ -57,6 +57,29 @@ In job YAML files (see `examples/job.yaml`), the following new options are suppo
 
 These options make it easier to keep the database up-to-date and avoid unbounded growth.
 
+- **query.yaml**
+  Used for querying market data that has already been fetched into the database (query tasks).
+  The `time_range` field supports two formats:
+
+  1. Explicit start/end dates:
+     ```yaml
+     time_range:
+       start: "2024-08-01T00:00:00Z"
+       end:   "2024-08-31T00:00:00Z"
+     ```
+
+  2. Relative time window (recommended):
+     ```yaml
+     time_range:
+       relative: "30d"   # Supported units: d=days, w=weeks, m=months, y=years
+     ```
+     The system will automatically expand `relative` into the corresponding `start`/`end` dates at runtime.
+
+  Notes:
+  - If both `relative` and `start/end` are specified, **`relative` takes precedence**.
+  - Existing configurations with only `start/end` remain fully supported.
+  - The parsing logic for `relative` is consistent with `job.yaml` (e.g., `1d`, `7d`, `3m`, `2y`).
+
 ## Usage
 
 ### 1. Build and run services (data ingestion)
