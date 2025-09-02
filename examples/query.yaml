@@ -2,8 +2,12 @@ symbols:
   - "2330.TW"
 
 time_range:
-  start: "2025-08-01T00:00:00Z"
-  end:   "2025-08-23T00:00:00Z"
+  # Option 1: explicit start/end
+  # start: "2025-08-01T00:00:00Z"
+  # end:   "2025-08-23T00:00:00Z"
+
+  # Option 2: relative range
+  relative: "2m"
 
 intervals:
   - "1d"
@@ -20,4 +24,4 @@ columns:
 output:
   format: "csv"
   path: "./out/queries"
-  filename: "q_2330_20250801_20250822"
+  # The filename will automatically expand to q_<symbols>_<start>_<end>

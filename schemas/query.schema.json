@@ -11,11 +11,15 @@
     },
     "time_range": {
       "type": "object",
-      "required": ["start", "end"],
       "properties": {
-        "start": { "type": "string", "format": "date-time" },
-        "end":   { "type": "string", "format": "date-time" }
+        "start":    { "type": "string", "format": "date-time" },
+        "end":      { "type": "string", "format": "date-time" },
+        "relative": { "type": "string", "pattern": "^\\d+[dwmy]$" }
       },
+      "oneOf": [
+        { "required": ["relative"] },
+        { "required": ["start", "end"] }
+      ],
       "additionalProperties": false
     },
     "intervals": {

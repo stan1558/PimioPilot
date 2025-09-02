@@ -8,6 +8,7 @@ from .validator import load_and_validate
 from .io.ndjson_logger import NDJSONLogger
 from .io.csv_writer import write_csv
 from .queries import query_to_dataframe, iter_query_chunks
+from .timeutil import parse_relative_range
 
 def _default_filename(spec: dict) -> str:
     syms = "-".join(sorted(spec["symbols"]))[:40].replace("/","_")
@@ -22,6 +23,15 @@ def run_query(spec: dict, schema_version: str = "1") -> Tuple[dict, Optional[pd.
     out_cfg = spec["output"]
     out_dir = Path(out_cfg["path"])
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- relative support: expand to start/end if time_range.relative is provided ---
+    tr = spec.get("time_range") or {}
+    rel = tr.get("relative")
+    if rel:
+        intervals = spec.get("intervals") or []
+        start_iso, end_iso = parse_relative_range(rel, intervals=intervals)
+        tr["start"], tr["end"] = start_iso, end_iso
+        spec["time_range"] = tr
 
     base = out_cfg.get("filename") or _default_filename(spec)
     fmt = out_cfg["format"]
