@@ -1,5 +1,5 @@
 from __future__ import annotations
-import os, time, json, math
+import os, time, json, math, shutil
 from pathlib import Path
 from typing import Tuple, List, Optional
 import pandas as pd
@@ -133,6 +133,57 @@ def run_query(spec: dict, schema_version: str = "1") -> Tuple[dict, Optional[pd.
 
     # For convenience: if result is small and format is parquet/csv w/o streaming, return df; else None
     df_out = None
+
+    # normalize artifacts to fetch-style names ===
+    # Target layout:
+    #   <out_dir>/<run_dir>/
+    #       data.csv
+    #       logs.ndjson
+    #       summary.json
+    def _normalize_artifacts_for_fetch_style(summary: dict, spec: dict) -> dict:
+        artifacts = summary.get("artifacts", {})
+        out_dir = Path(artifacts.get("out_dir") or spec["output"]["path"]).resolve()
+        base = spec["output"].get("filename")
+        if base:
+            base = Path(base).stem  # strip any accidental extension
+        else:
+            base = _default_filename(spec)
+        run_dir = out_dir / base
+        run_dir.mkdir(parents=True, exist_ok=True)
+
+        # Legacy flat files
+        legacy_csv = out_dir / f"{base}.csv"
+        legacy_log = out_dir / f"{base}.log.ndjson"
+        legacy_manifest = out_dir / f"{base}.manifest.json"
+
+        # Fetch-style destinations
+        dst_csv = run_dir / "data.csv"
+        dst_log = run_dir / "logs.ndjson"
+        dst_summary = run_dir / "summary.json"
+
+        # Move legacy into new locations if they exist
+        try:
+            if legacy_csv.exists():
+                shutil.move(str(legacy_csv), str(dst_csv))
+            if legacy_log.exists():
+                shutil.move(str(legacy_log), str(dst_log))
+            if legacy_manifest.exists():
+                shutil.move(str(legacy_manifest), str(dst_summary))
+        except Exception:
+            # best-effort; don't fail overall query
+            pass
+
+        # Overwrite artifacts to point to fetch-style only
+        new_artifacts = {
+            "out_dir": str(run_dir),
+            "csv": str(dst_csv) if dst_csv.exists() else artifacts.get("csv"),
+            "log_ndjson": str(dst_log) if dst_log.exists() else artifacts.get("log_ndjson"),
+            "result": str(dst_summary) if dst_summary.exists() else artifacts.get("result"),
+            "rows": artifacts.get("rows"),
+        }
+        summary["artifacts"] = new_artifacts
+        return summary
+
     if fmt in ("parquet", "csv") and not (chunk_size):
         try:
             # Re-read quickly only for users who call via API and want a DF
@@ -142,5 +193,14 @@ def run_query(spec: dict, schema_version: str = "1") -> Tuple[dict, Optional[pd.
                 df_out = pd.read_csv(file_path)
         except Exception:
             df_out = None
+
+    try:
+        summary = _normalize_artifacts_for_fetch_style(summary, spec)
+    except Exception:
+        pass
+
+    # Write the normalized summary to its final path (fetch-style)
+    final_summary_path = Path(summary["artifacts"]["result"])  # should be <run-dir>/summary.json
+    final_summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return summary, df_out

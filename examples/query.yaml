@@ -24,4 +24,11 @@ columns:
 output:
   format: "csv"
   path: "./out/queries"
-  # The filename will automatically expand to q_<symbols>_<start>_<end>
+
+  # Optional: subdirectory name under path. If omitted, a default like
+  #   q_<symbols>_<start>_<end>
+  # is used. Results will be written in fetch-style filenames:
+  #   <path>/<filename>/data.csv
+  #   <path>/<filename>/logs.ndjson
+  #   <path>/<filename>/summary.json
+  # filename: "2330-daily-2m"

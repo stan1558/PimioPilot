@@ -55,11 +55,13 @@ In job YAML files (see `examples/job.yaml`), the following new options are suppo
 - `retention.delete_older_than`: automatically delete rows older than this cutoff after each run.
   Accepts relative durations (e.g. `"7y"`) or absolute dates (`"2020-01-01"`).
 
-These options make it easier to keep the database up-to-date and avoid unbounded growth.
+- These options make it easier to keep the database up-to-date and avoid unbounded growth.
 
-- **query.yaml**
-  Used for querying market data that has already been fetched into the database (query tasks).
-  The `time_range` field supports two formats:
+`examples/query.yaml`
+
+- Used for querying market data that has already been fetched into the database (query tasks).
+
+- The `time_range` field supports two formats:
 
   1. Explicit start/end dates:
      ```yaml
@@ -75,7 +77,7 @@ These options make it easier to keep the database up-to-date and avoid unbounded
      ```
      The system will automatically expand `relative` into the corresponding `start`/`end` dates at runtime.
 
-  Notes:
+- Notes:
   - If both `relative` and `start/end` are specified, **`relative` takes precedence**.
   - Existing configurations with only `start/end` remain fully supported.
   - The parsing logic for `relative` is consistent with `job.yaml` (e.g., `1d`, `7d`, `3m`, `2y`).
@@ -126,15 +128,16 @@ Expected output:
 ```
 
 #### Query artifacts
-Outputs are written under `./out/queries/`:
-- `*.csv` → result table
-- `*.log.ndjson` → query logs
-- `*.manifest.json` → query metadata (config, rows, artifacts)
+For each query run, outputs are now written to a subdirectory under your configured `output.path`:
 
-Example check:
-```bash
-cat out/queries/q_2330_20250801_20250822.manifest.json
 ```
+<output.path>/<run-name>/
+  ├─ data.csv
+  ├─ logs.ndjson
+  └─ summary.json
+```
+
+`run-name` defaults to `q_<symbols>_<start>_<end>` (now used as a directory name), or you can set it via `output.filename` (extension ignored).
 
 ---
 
