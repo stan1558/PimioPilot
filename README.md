@@ -141,6 +141,38 @@ For each query run, outputs are now written to a subdirectory under your configu
 
 ---
 
+### 3. Strategy Module Interface and Testing
+
+#### Strategy Module Interface
+- Path: `src/pimiopilot_strategies/`
+- Interface: `build_strategy(config)` → returns an object implementing `generate_signal(data)`
+- Input: Market DataFrame (must include `ts, symbol, open, high, low, close, volume`)
+- Output: dict following `schemas/strategy.output.schema.json`
+
+#### Run Tests with Docker
+```bash
+# Remove old test container (to avoid 'network not found' issues)
+docker compose rm -f test
+
+# Run strategy module tests
+docker compose --profile test up test --abort-on-container-exit
+
+# View test logs
+docker compose logs -f test
+```
+
+Example output:
+```
+tests/test_strategy_interface.py::test_build_and_generate PASSED
+tests/test_strategy_interface.py::test_missing_columns_raises PASSED
+tests/test_strategy_interface.py::test_deterministic PASSED
+```
+
+> Note: `pytest` must be installed in the Docker image (already included in `requirements.txt`).
+> If you see a `network not found` error, run `docker compose rm -f test` first.
+
+---
+
 ## License & Credits
 - [yfinance](https://github.com/ranaroussi/yfinance) (Apache 2.0 License)
 - [TimescaleDB](https://github.com/timescale/timescaledb) (Apache 2.0 License + Timescale License for advanced features)

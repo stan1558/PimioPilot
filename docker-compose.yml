@@ -79,5 +79,18 @@ services:
       app:
         condition: service_started
 
+  test:
+    build:
+      context: .
+      # target: dev
+    profiles:
+    - test
+    environment:
+    - PYTHONPATH=/app/src
+    command: pytest tests/ -v
+    volumes:
+    - .:/app
+    working_dir: /app
+
 volumes:
   tsdata:
