@@ -145,34 +145,39 @@ For each query run, outputs are now written to a subdirectory under your configu
 
 #### Strategy Module Interface
 - Path: `src/pimiopilot_strategies/`
-- Interface: `build_strategy(config)` → returns an object implementing `generate_signal(data)`
-- Input: Market DataFrame (must include `ts, symbol, open, high, low, close, volume`)
-- Output: dict following `schemas/strategy.output.schema.json`
+- Interface: `build_strategy(config)` → returns an object implementing `generate_signal(dataframe)`
+- Input: Market `pandas.DataFrame` (must include `ts, symbol, open, high, low, close, volume`)
+- Output: `dict` (strategy-specific), and **Runner** will normalize common metadata (see below).
 
-#### Run Tests with Docker
+#### Strategy Runner Framework
+- Path: `src/pimiopilot_strategy_runner/`
+- Entry: `StrategyRunner` with:
+  - `StrategyRef(module: str, params: dict)` → points to a strategy module (e.g. `pimiopilot_strategies.sma_crossover`)
+  - `run(df, mode="batch"|"online")` → unified execution API
+- Logging: NDJSON via `pimiopilot_data.io.ndjson_logger.NDJSONLogger`
+  - Events: `runner_init`, `strategy_loaded`, `run_start(rows, cols, mode)`, `run_end(seconds, output_keys)`
+- Normalization: If a strategy’s output does **not** include an `input` block, the Runner adds:
+  ```json
+  "input": {"rows": <len(df)>, "cols": <df.shape[1]>}
+  ```
+
+#### Run Tests
+
+**Docker (recommended)**
 ```bash
-# Remove old test container (to avoid 'network not found' issues)
+# Ensure a clean test container
 docker compose rm -f test
 
-# Run strategy module tests
+# Run ALL tests under tests/ (strategy interface + runner)
 docker compose --profile test up test --abort-on-container-exit
 
 # View test logs
 docker compose logs -f test
 ```
 
-Example output:
-```
-tests/test_strategy_interface.py::test_build_and_generate PASSED
-tests/test_strategy_interface.py::test_missing_columns_raises PASSED
-tests/test_strategy_interface.py::test_deterministic PASSED
-```
+You should see 4 tests passing (interface x3, runner x1).
 
-> Note: `pytest` must be installed in the Docker image (already included in `requirements.txt`).
-> If you see a `network not found` error, run `docker compose rm -f test` first.
-
----
-
+The CLI prints a JSON result and writes NDJSON logs to `--log`.
 ## License & Credits
 - [yfinance](https://github.com/ranaroussi/yfinance) (Apache 2.0 License)
 - [TimescaleDB](https://github.com/timescale/timescaledb) (Apache 2.0 License + Timescale License for advanced features)
