@@ -183,4 +183,3 @@ The CLI prints a JSON result and writes NDJSON logs to `--log`.
 - [TimescaleDB](https://github.com/timescale/timescaledb) (Apache 2.0 License + Timescale License for advanced features)
 - [pandas](https://github.com/pandas-dev/pandas) (BSD 3-Clause License)
 - [psycopg2-binary](https://github.com/psycopg/psycopg2) (LGPL License)
-- Project code licensed under [MIT License](./LICENSE)
