@@ -14,9 +14,13 @@ class RetentionSpec:
 @dataclass
 class OutputSpec:
     out_dir: str
+    write_parquet: bool = True
+    parquet_filename: str = "data.parquet"
+    manifest_filename: str = "manifest.json"
+    logs_filename: str = "logs.ndjson"
+    # backward compat flags (ignored if parquet is enabled)
     write_csv: bool = False
     csv_filename: str = "data.csv"
-    csv_fields: Optional[List[str]] = None
 
 @dataclass
 class YFOpts:

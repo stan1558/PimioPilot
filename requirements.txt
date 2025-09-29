@@ -4,3 +4,8 @@ psycopg2-binary
 jsonschema
 pyyaml
 pytest
+
+pyarrow
+python-dateutil
+pytz
+fastparquet

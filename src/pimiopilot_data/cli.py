@@ -25,7 +25,7 @@ def main():
 
     if args.cmd == "run":
         cfg = load_and_validate(args.config, args.schema)
-        summary, _ = run_job(cfg)
+        summary = run_job(cfg)
         print(json.dumps({
             "status": summary["status"],
             "rows": summary["artifacts"]["rows"],

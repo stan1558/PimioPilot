@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json, time, os
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Tuple
 import pandas as pd
 from datetime import datetime
@@ -10,6 +11,11 @@ from dateutil.relativedelta import relativedelta
 from .models import Job, RangeSpec, OutputSpec, YFOpts, RetentionSpec
 from .io.ndjson_logger import NDJSONLogger
 from .io.csv_writer import write_csv
+
+from .io.parquet_writer import write_parquet
+from .io.manifest import stable_spec, spec_hash, write_manifest
+from .io.json_validator import validate_json
+
 from .fetchers import yf_client
 from .sinks.timescaledb import upsert_prices, TSConfig, purge_older_than
 
@@ -132,3 +138,149 @@ def run_job(validated_cfg: dict, schema_version: str = "2025-08-24") -> Tuple[di
     logger.log("job_end", seconds=elapsed)
 
     return summary, df
+
+_YF_RENAME = {
+    "Open": "open",
+    "High": "high",
+    "Low": "low",
+    "Close": "close",
+    "Adj Close": "adj_close",
+    "AdjClose": "adj_close",
+    "Adj_Close": "adj_close",
+    "adjclose": "adj_close",
+    "Volume": "volume",
+}
+
+
+def _normalize_candle_df(df: pd.DataFrame, symbol: str, assume_no_adjust: bool=False) -> pd.DataFrame:
+    if df is None or df.empty:
+        return df
+    df = df.copy()
+
+    rename_map = {c: _YF_RENAME.get(c, c) for c in df.columns}
+    df.rename(columns=rename_map, inplace=True)
+
+    if "ts" not in df.columns:
+        if isinstance(df.index, pd.DatetimeIndex):
+            df["ts"] = df.index.tz_convert("UTC").view("int64") // 10**9 if df.index.tz is not None else df.index.tz_localize("UTC").view("int64") // 10**9
+        else:
+            pass
+
+    required = {"open","high","low","close","volume"}
+    missing_basic = sorted(list(required - set(df.columns)))
+    if missing_basic:
+        raise RuntimeError(f"Missing basic OHLCV columns: {missing_basic}")
+
+    if "adj_close" not in df.columns or df["adj_close"].isna().all():
+        df["adj_close"] = df["close"]
+        if not assume_no_adjust:
+            pass
+
+    if "symbol" not in df.columns:
+        df["symbol"] = symbol
+
+    cols = ["ts","symbol","open","high","low","close","volume","adj_close"]
+    for c in cols:
+        if c not in df.columns:
+            df[c] = pd.NA
+
+    return df[cols]
+
+def _to_namespace(obj):
+    if isinstance(obj, dict):
+        return SimpleNamespace(**{k: _to_namespace(v) for k, v in obj.items()})
+    if isinstance(obj, list):
+        return [_to_namespace(v) for v in obj]
+    return obj
+
+def run_job(job):
+    if isinstance(job, dict):
+        job = _to_namespace(job)
+
+    out_dir = Path(job.outputs.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    logger = NDJSONLogger(out_dir / (job.outputs.logs_filename or "logs.ndjson"))
+    logger.log("job.start", task_id=job.task_id, source=job.source)
+
+    start, end = resolve_date_range(job.range, tz="Asia/Taipei")
+    # Fetch
+    df = None
+    if job.source == "yfinance":
+        df = yf_client.fetch(job.symbols, interval=job.interval, start=start, end=end, options=job.yfinance_options.__dict__)
+        symbol = job.symbols[0]
+        df = _normalize_candle_df(df, symbol, assume_no_adjust=False)
+    else:
+        raise ValueError(f"Unsupported source: {job.source}")
+
+    # Normalize columns to CandleV1
+    cols = ["ts","symbol","open","high","low","close","volume","adj_close"]
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise RuntimeError(f"Missing columns for CandleV1: {missing}")
+
+    # Write parquet + metadata
+    meta = {
+        "pimiopilot.schema_version": "CandleV1",
+        "pimiopilot.ts_tz": "UTC",
+        "pimiopilot.interval": job.interval,
+        "pimiopilot.adjustment": "auto" if job.yfinance_options.auto_adjust else "none",
+        "pimiopilot.source": job.source,
+    }
+    parquet_path = None
+    if job.outputs.write_parquet:
+        parquet_path = write_parquet(df[cols], out_dir, job.outputs.parquet_filename, metadata=meta, fields=cols)
+
+    # Build manifest
+    spec = stable_spec({
+        "source": job.source,
+        "symbols": job.symbols,
+        "interval": job.interval,
+        "range": job.range.__dict__,
+        "yfinance_options": job.yfinance_options.__dict__,
+    })
+    shash = spec_hash(spec)
+    manifest = {
+        "spec_hash": shash,
+        "source": job.source,
+        "symbols": job.symbols,
+        "range": {"start": start, "end": end, "relative": job.range.relative},
+        "interval": job.interval,
+        "timezone": "Asia/Taipei",
+        "adjustment": "auto" if job.yfinance_options.auto_adjust else "none",
+        "schema_version": "CandleV1",
+        "created_at": datetime.now(pytz.UTC).isoformat(),
+        "artifacts": {
+            "parquet": str(Path(job.outputs.parquet_filename)),
+            "logs": str(Path(job.outputs.logs_filename)),
+        },
+        "source_options": job.yfinance_options.__dict__,
+    }
+    logs_path = out_dir / (job.outputs.logs_filename or "logs.ndjson")
+    manifest_path = out_dir / (job.outputs.manifest_filename or "manifest.json")
+
+    # Validate manifest before write
+    validate_json(manifest, Path("schemas/manifest.schema.json"))
+    write_manifest(manifest_path, manifest, schema_path=Path("schemas/manifest.schema.json"))
+
+    rows = len(df) if df is not None else 0
+    logger.log("job.end", task_id=job.task_id, rows=rows)
+    summary = {
+        "status": "ok",
+        "task_id": getattr(job, "task_id", None),
+        "source": getattr(job, "source", None),
+        "interval": getattr(job, "interval", None),
+        "out_dir": str(out_dir),
+        "artifacts": {
+            "out_dir": str(out_dir),
+            "parquet": str(parquet_path) if parquet_path else None,
+            "manifest": str(manifest_path),
+            "logs": str(logs_path),
+            "rows": rows
+        },
+        "parquet": str(parquet_path) if parquet_path else None,
+        "manifest": str(manifest_path),
+        "logs": str(logs_path),
+        "rows": rows
+
+    }
+    return summary

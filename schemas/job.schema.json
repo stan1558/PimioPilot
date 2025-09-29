@@ -125,6 +125,22 @@
           "items": {
             "type": "string"
           }
+        },
+        "write_parquet": {
+          "type": "boolean",
+          "default": true
+        },
+        "parquet_filename": {
+          "type": "string",
+          "default": "data.parquet"
+        },
+        "manifest_filename": {
+          "type": "string",
+          "default": "manifest.json"
+        },
+        "logs_filename": {
+          "type": "string",
+          "default": "logs.ndjson"
         }
       },
       "additionalProperties": false

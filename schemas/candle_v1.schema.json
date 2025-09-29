@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pimiopilot.ai/schemas/candle_v1.schema.json",
+  "title": "CandleV1 Row Schema",
+  "type": "object",
+  "required": [
+    "ts",
+    "symbol",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "adj_close"
+  ],
+  "properties": {
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "symbol": {
+      "type": "string"
+    },
+    "open": {
+      "type": "number"
+    },
+    "high": {
+      "type": "number"
+    },
+    "low": {
+      "type": "number"
+    },
+    "close": {
+      "type": "number"
+    },
+    "volume": {
+      "type": "number"
+    },
+    "adj_close": {
+      "type": "number"
+    }
+  },
+  "additionalProperties": true
+}

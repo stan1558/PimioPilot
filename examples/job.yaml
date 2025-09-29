@@ -21,5 +21,9 @@ retention:
 
 outputs:
   out_dir: "./out/demo-001"
-  write_csv: true
+  write_csv: false
   csv_filename: "data.csv"
+  write_parquet: true
+  parquet_filename: "data.parquet"
+  manifest_filename: "manifest.json"
+  logs_filename: "logs.ndjson"

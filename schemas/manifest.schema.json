@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pimiopilot.ai/schemas/manifest.schema.json",
+  "title": "PimioPilot Query Manifest",
+  "type": "object",
+  "required": [
+    "spec_hash",
+    "source",
+    "symbols",
+    "range",
+    "interval",
+    "timezone",
+    "adjustment",
+    "schema_version",
+    "artifacts"
+  ],
+  "properties": {
+    "spec_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source": {
+      "type": "string"
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "range": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "relative": {
+          "type": "string"
+        }
+      }
+    },
+    "interval": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "adjustment": {
+      "type": "string",
+      "enum": [
+        "none",
+        "split",
+        "split+dividend",
+        "auto"
+      ]
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "CandleV1"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifacts": {
+      "type": "object",
+      "required": [
+        "parquet",
+        "logs"
+      ],
+      "properties": {
+        "parquet": {
+          "type": "string"
+        },
+        "logs": {
+          "type": "string"
+        }
+      }
+    },
+    "source_options": {
+      "type": "object"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}
